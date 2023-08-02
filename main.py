@@ -31,11 +31,7 @@ MULTINODE_HACKS = True
 def default_trainer_args():
     argspec = dict(inspect.signature(Trainer.__init__).parameters)
     argspec.pop("self")
-    default_args = {
-        param: argspec[param].default
-        for param in argspec
-        if argspec[param] != Parameter.empty
-    }
+    default_args = {param: argspec[param].default for param in argspec if argspec[param] != Parameter.empty}
     return default_args
 
 
@@ -103,9 +99,7 @@ def get_parser(**parser_kwargs):
         nargs="?",
         help="disable test",
     )
-    parser.add_argument(
-        "-p", "--project", help="name of new or path to existing project"
-    )
+    parser.add_argument("-p", "--project", help="name of new or path to existing project")
     parser.add_argument(
         "-d",
         "--debug",
@@ -268,10 +262,7 @@ class SetupCallback(Callback):
             os.makedirs(self.cfgdir, exist_ok=True)
 
             if "callbacks" in self.lightning_config:
-                if (
-                    "metrics_over_trainsteps_checkpoint"
-                    in self.lightning_config["callbacks"]
-                ):
+                if "metrics_over_trainsteps_checkpoint" in self.lightning_config["callbacks"]:
                     os.makedirs(
                         os.path.join(self.ckptdir, "trainstep_checkpoints"),
                         exist_ok=True,
@@ -351,15 +342,11 @@ class ImageLogger(Callback):
         for k in images:
             if isheatmap(images[k]):
                 fig, ax = plt.subplots()
-                ax = ax.matshow(
-                    images[k].cpu().numpy(), cmap="hot", interpolation="lanczos"
-                )
+                ax = ax.matshow(images[k].cpu().numpy(), cmap="hot", interpolation="lanczos")
                 plt.colorbar(ax)
                 plt.axis("off")
 
-                filename = "{}_gs-{:06}_e-{:06}_b-{:06}.png".format(
-                    k, global_step, current_epoch, batch_idx
-                )
+                filename = "{}_gs-{:06}_e-{:06}_b-{:06}.png".format(k, global_step, current_epoch, batch_idx)
                 os.makedirs(root, exist_ok=True)
                 path = os.path.join(root, filename)
                 plt.savefig(path)
@@ -372,9 +359,7 @@ class ImageLogger(Callback):
                 grid = grid.transpose(0, 1).transpose(1, 2).squeeze(-1)
                 grid = grid.numpy()
                 grid = (grid * 255).astype(np.uint8)
-                filename = "{}_gs-{:06}_e-{:06}_b-{:06}.png".format(
-                    k, global_step, current_epoch, batch_idx
-                )
+                filename = "{}_gs-{:06}_e-{:06}_b-{:06}.png".format(k, global_step, current_epoch, batch_idx)
                 path = os.path.join(root, filename)
                 os.makedirs(os.path.split(path)[0], exist_ok=True)
                 img = Image.fromarray(grid)
@@ -402,7 +387,7 @@ class ImageLogger(Callback):
             # batch_idx > 5 and
             self.max_images > 0
         ):
-            logger = type(pl_module.logger)
+            type(pl_module.logger)
             is_train = pl_module.training
             if is_train:
                 pl_module.eval()
@@ -413,9 +398,7 @@ class ImageLogger(Callback):
                 "cache_enabled": torch.is_autocast_cache_enabled(),
             }
             with torch.no_grad(), torch.cuda.amp.autocast(**gpu_autocast_kwargs):
-                images = pl_module.log_images(
-                    batch, split=split, **self.log_images_kwargs
-                )
+                images = pl_module.log_images(batch, split=split, **self.log_images_kwargs)
 
             for k in images:
                 N = min(images[k].shape[0], self.max_images)
@@ -433,9 +416,7 @@ class ImageLogger(Callback):
                 pl_module.global_step,
                 pl_module.current_epoch,
                 batch_idx,
-                pl_module=pl_module
-                if isinstance(pl_module.logger, WandbLogger)
-                else None,
+                pl_module=pl_module if isinstance(pl_module.logger, WandbLogger) else None,
             )
 
             if is_train:
@@ -465,15 +446,11 @@ class ImageLogger(Callback):
             self.log_img(pl_module, batch, batch_idx, split="train")
 
     @rank_zero_only
-    def on_validation_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, *args, **kwargs
-    ):
+    def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, *args, **kwargs):
         if not self.disabled and pl_module.global_step > 0:
             self.log_img(pl_module, batch, batch_idx, split="val")
         if hasattr(pl_module, "calibrate_grad_norm"):
-            if (
-                pl_module.calibrate_grad_norm and batch_idx % 25 == 0
-            ) and batch_idx > 0:
+            if (pl_module.calibrate_grad_norm and batch_idx % 25 == 0) and batch_idx > 0:
                 self.log_gradients(trainer, pl_module, batch_idx=batch_idx)
 
 
@@ -591,12 +568,9 @@ if __name__ == "__main__":
                     cfg_fname = os.path.split(opt.base[0])[-1]
                     cfg_name = os.path.splitext(cfg_fname)[0]
                 else:
-                    assert "configs" in os.path.split(opt.base[0])[0], os.path.split(
-                        opt.base[0]
-                    )[0]
+                    assert "configs" in os.path.split(opt.base[0])[0], os.path.split(opt.base[0])[0]
                     cfg_path = os.path.split(opt.base[0])[0].split(os.sep)[
-                        os.path.split(opt.base[0])[0].split(os.sep).index("configs")
-                        + 1 :
+                        os.path.split(opt.base[0])[0].split(os.sep).index("configs") + 1 :
                     ]  # cut away the first one (we assert all configs are in "configs")
                     cfg_name = os.path.splitext(os.path.split(opt.base[0])[-1])[0]
                     cfg_name = "-".join(cfg_path) + f"-{cfg_name}"
@@ -624,9 +598,7 @@ if __name__ == "__main__":
         print(f"Enabling TF32 for PyTorch {torch.__version__}")
     else:
         print(f"Using default TF32 settings for PyTorch {torch.__version__}:")
-        print(
-            f"torch.backends.cuda.matmul.allow_tf32={torch.backends.cuda.matmul.allow_tf32}"
-        )
+        print(f"torch.backends.cuda.matmul.allow_tf32={torch.backends.cuda.matmul.allow_tf32}")
         print(f"torch.backends.cudnn.allow_tf32={torch.backends.cudnn.allow_tf32}")
 
     try:
@@ -648,7 +620,7 @@ if __name__ == "__main__":
 
         ckpt_resume_path = opt.resume_from_checkpoint
 
-        if not "devices" in trainer_config and trainer_config["accelerator"] != "gpu":
+        if "devices" not in trainer_config and trainer_config["accelerator"] != "gpu":
             del trainer_config["accelerator"]
             cpu = True
         else:
@@ -691,7 +663,7 @@ if __name__ == "__main__":
             # TODO change once leaving "swiffer" config directory
             try:
                 group_name = nowname.split(now)[-1].split("-")[1]
-            except:
+            except Exception:
                 group_name = nowname
             default_logger_cfg["params"]["group"] = group_name
             init_wandb(
@@ -745,9 +717,7 @@ if __name__ == "__main__":
                 # "ddp_comm_hook": default.fp16_compress_hook  # TODO: experiment with this, also for DDPSharded
             }
         strategy_cfg = OmegaConf.merge(default_strategy_config, strategy_cfg)
-        print(
-            f"strategy config: \n ++++++++++++++ \n {strategy_cfg} \n ++++++++++++++ "
-        )
+        print(f"strategy config: \n ++++++++++++++ \n {strategy_cfg} \n ++++++++++++++ ")
         trainer_kwargs["strategy"] = instantiate_from_config(strategy_cfg)
 
         # add callback which sets up log directory
@@ -811,17 +781,13 @@ if __name__ == "__main__":
         elif "ignore_keys_callback" in callbacks_cfg:
             del callbacks_cfg["ignore_keys_callback"]
 
-        trainer_kwargs["callbacks"] = [
-            instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg
-        ]
-        if not "plugins" in trainer_kwargs:
+        trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
+        if "plugins" not in trainer_kwargs:
             trainer_kwargs["plugins"] = list()
 
         # cmd line trainer args (which are in trainer_opt) have always priority over config-trainer-args (which are in trainer_kwargs)
         trainer_opt = vars(trainer_opt)
-        trainer_kwargs = {
-            key: val for key, val in trainer_kwargs.items() if key not in trainer_opt
-        }
+        trainer_kwargs = {key: val for key, val in trainer_kwargs.items() if key not in trainer_opt}
         trainer = Trainer(**trainer_opt, **trainer_kwargs)
 
         trainer.logdir = logdir  ###
@@ -836,10 +802,8 @@ if __name__ == "__main__":
         print("#### Data #####")
         try:
             for k in data.datasets:
-                print(
-                    f"{k}, {data.datasets[k].__class__.__name__}, {len(data.datasets[k])}"
-                )
-        except:
+                print(f"{k}, {data.datasets[k].__class__.__name__}, {len(data.datasets[k])}")
+        except Exception:
             print("datasets not yet initialized.")
 
         # configure learning rate

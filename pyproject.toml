@@ -43,6 +43,17 @@ dependencies = [
 [tool.hatch.envs.ci.scripts]
 test-inference = [
     "pip install torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2+cu118 --index-url https://download.pytorch.org/whl/cu118",
-    "pip install -r requirements/pt2.txt",    
+    "pip install -r requirements/pt2.txt",
     "pytest -v tests/inference/test_inference.py {args}",
 ]
+
+[tool.ruff]
+line-length = 110
+target-version = 'py310'
+ignore = ['F841', 'F401', 'E501']
+
+[tool.ruff.isort]
+combine-as-imports = true
+force-wrap-aliases = true
+known-local-folder = ["sgm"]
+known-first-party = ["sgm"]
