@@ -282,9 +282,7 @@ class SamplingPipeline:
 
 def get_guider_config(params: SamplingParams):
     if params.guider == Guider.IDENTITY:
-        guider_config = {
-            "target": "sgm.modules.diffusionmodules.guiders.IdentityGuider"
-        }
+        guider_config = {"target": "sgm.modules.diffusionmodules.guiders.IdentityGuider"}
     elif params.guider == Guider.VANILLA:
         scale = params.scale
 

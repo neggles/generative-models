@@ -46,9 +46,7 @@ class AbstractAutoencoder(pl.LightningModule):
         if version.parse(torch.__version__) >= version.parse("2.0.0"):
             self.automatic_optimization = False
 
-    def init_from_ckpt(
-        self, path: str, ignore_keys: Union[Tuple, list, ListConfig] = tuple()
-    ) -> None:
+    def init_from_ckpt(self, path: str, ignore_keys: Union[Tuple, list, ListConfig] = tuple()) -> None:
         if path.endswith("ckpt"):
             sd = torch.load(path, map_location="cpu")["state_dict"]
         elif path.endswith("safetensors"):
@@ -63,9 +61,7 @@ class AbstractAutoencoder(pl.LightningModule):
                     print("Deleting key {} from state_dict.".format(k))
                     del sd[k]
         missing, unexpected = self.load_state_dict(sd, strict=False)
-        print(
-            f"Restored from {path} with {len(missing)} missing and {len(unexpected)} unexpected keys"
-        )
+        print(f"Restored from {path} with {len(missing)} missing and {len(unexpected)} unexpected keys")
         if len(missing) > 0:
             print(f"Missing Keys: {missing}")
         if len(unexpected) > 0:
@@ -105,9 +101,7 @@ class AbstractAutoencoder(pl.LightningModule):
 
     def instantiate_optimizer_from_config(self, params, lr, cfg):
         print(f"loading >>> {cfg['target']} <<< optimizer from config")
-        return get_obj_from_str(cfg["target"])(
-            params, lr=lr, **cfg.get("params", dict())
-        )
+        return get_obj_from_str(cfg["target"])(params, lr=lr, **cfg.get("params", dict()))
 
     def configure_optimizers(self) -> Any:
         raise NotImplementedError()
@@ -137,9 +131,7 @@ class AutoencodingEngine(AbstractAutoencoder):
         self.decoder = instantiate_from_config(decoder_config)
         self.loss = instantiate_from_config(loss_config)
         self.regularization = instantiate_from_config(regularizer_config)
-        self.optimizer_config = default(
-            optimizer_config, {"target": "torch.optim.Adam"}
-        )
+        self.optimizer_config = default(optimizer_config, {"target": "torch.optim.Adam"})
         self.lr_g_factor = lr_g_factor
 
     def get_input(self, batch: Dict) -> torch.Tensor:
@@ -195,9 +187,7 @@ class AutoencodingEngine(AbstractAutoencoder):
                 split="train",
             )
 
-            self.log_dict(
-                log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=True
-            )
+            self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=True)
             return aeloss
 
         if optimizer_idx == 1:
@@ -211,9 +201,7 @@ class AutoencodingEngine(AbstractAutoencoder):
                 last_layer=self.get_last_layer(),
                 split="train",
             )
-            self.log_dict(
-                log_dict_disc, prog_bar=False, logger=True, on_step=True, on_epoch=True
-            )
+            self.log_dict(log_dict_disc, prog_bar=False, logger=True, on_step=True, on_epoch=True)
             return discloss
 
     def validation_step(self, batch, batch_idx) -> Dict:
@@ -302,9 +290,7 @@ class AutoencoderKL(AutoencodingEngine):
             self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
 
     def encode(self, x):
-        assert (
-            not self.training
-        ), f"{self.__class__.__name__} only supports inference currently"
+        assert not self.training, f"{self.__class__.__name__} only supports inference currently"
         h = self.encoder(x)
         moments = self.quant_conv(h)
         posterior = DiagonalGaussianDistribution(moments)

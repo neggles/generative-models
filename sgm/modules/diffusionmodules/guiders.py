@@ -11,14 +11,14 @@ class VanillaCFG:
     """
 
     def __init__(self, scale, dyn_thresh_config=None):
-        scale_schedule = lambda scale, sigma: scale  # independent of step
+        def scale_schedule(scale, sigma):
+            return scale  # independent of step
+
         self.scale_schedule = partial(scale_schedule, scale)
         self.dyn_thresh = instantiate_from_config(
             default(
                 dyn_thresh_config,
-                {
-                    "target": "sgm.modules.diffusionmodules.sampling_utils.NoDynamicThresholding"
-                },
+                {"target": "sgm.modules.diffusionmodules.sampling_utils.NoDynamicThresholding"},
             )
         )
 

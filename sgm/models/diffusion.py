@@ -44,31 +44,19 @@ class DiffusionEngine(pl.LightningModule):
         super().__init__()
         self.log_keys = log_keys
         self.input_key = input_key
-        self.optimizer_config = default(
-            optimizer_config, {"target": "torch.optim.AdamW"}
-        )
+        self.optimizer_config = default(optimizer_config, {"target": "torch.optim.AdamW"})
         model = instantiate_from_config(network_config)
         self.model = get_obj_from_str(default(network_wrapper, OPENAIUNETWRAPPER))(
             model, compile_model=compile_model
         )
 
         self.denoiser = instantiate_from_config(denoiser_config)
-        self.sampler = (
-            instantiate_from_config(sampler_config)
-            if sampler_config is not None
-            else None
-        )
-        self.conditioner = instantiate_from_config(
-            default(conditioner_config, UNCONDITIONAL_CONFIG)
-        )
+        self.sampler = instantiate_from_config(sampler_config) if sampler_config is not None else None
+        self.conditioner = instantiate_from_config(default(conditioner_config, UNCONDITIONAL_CONFIG))
         self.scheduler_config = scheduler_config
         self._init_first_stage(first_stage_config)
 
-        self.loss_fn = (
-            instantiate_from_config(loss_fn_config)
-            if loss_fn_config is not None
-            else None
-        )
+        self.loss_fn = instantiate_from_config(loss_fn_config) if loss_fn_config is not None else None
 
         self.use_ema = use_ema
         if self.use_ema:
@@ -94,9 +82,7 @@ class DiffusionEngine(pl.LightningModule):
             raise NotImplementedError
 
         missing, unexpected = self.load_state_dict(sd, strict=False)
-        print(
-            f"Restored from {path} with {len(missing)} missing and {len(unexpected)} unexpected keys"
-        )
+        print(f"Restored from {path} with {len(missing)} missing and {len(unexpected)} unexpected keys")
         if len(missing) > 0:
             print(f"Missing Keys: {missing}")
         if len(unexpected) > 0:
@@ -144,9 +130,7 @@ class DiffusionEngine(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         loss, loss_dict = self.shared_step(batch)
 
-        self.log_dict(
-            loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False
-        )
+        self.log_dict(loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False)
 
         self.log(
             "global_step",
@@ -159,9 +143,7 @@ class DiffusionEngine(pl.LightningModule):
 
         if self.scheduler_config is not None:
             lr = self.optimizers().param_groups[0]["lr"]
-            self.log(
-                "lr_abs", lr, prog_bar=True, logger=True, on_step=True, on_epoch=False
-            )
+            self.log("lr_abs", lr, prog_bar=True, logger=True, on_step=True, on_epoch=False)
 
         return loss
 
@@ -189,9 +171,7 @@ class DiffusionEngine(pl.LightningModule):
                     print(f"{context}: Restored training weights")
 
     def instantiate_optimizer_from_config(self, params, lr, cfg):
-        return get_obj_from_str(cfg["target"])(
-            params, lr=lr, **cfg.get("params", dict())
-        )
+        return get_obj_from_str(cfg["target"])(params, lr=lr, **cfg.get("params", dict()))
 
     def configure_optimizers(self):
         lr = self.learning_rate
@@ -224,9 +204,9 @@ class DiffusionEngine(pl.LightningModule):
     ):
         randn = torch.randn(batch_size, *shape).to(self.device)
 
-        denoiser = lambda input, sigma, c: self.denoiser(
-            self.model, input, sigma, c, **kwargs
-        )
+        def denoiser(input, sigma, c):
+            return self.denoiser(self.model, input, sigma, c, **kwargs)
+
         samples = self.sampler(denoiser, randn, cond, uc=uc)
         return samples
 
@@ -240,9 +220,7 @@ class DiffusionEngine(pl.LightningModule):
         log = dict()
 
         for embedder in self.conditioner.embedders:
-            if (
-                (self.log_keys is None) or (embedder.input_key in self.log_keys)
-            ) and not self.no_cond_log:
+            if ((self.log_keys is None) or (embedder.input_key in self.log_keys)) and not self.no_cond_log:
                 x = batch[embedder.input_key][:n]
                 if isinstance(x, torch.Tensor):
                     if x.dim() == 1:
@@ -251,10 +229,7 @@ class DiffusionEngine(pl.LightningModule):
                         xc = log_txt_as_img((image_h, image_w), x, size=image_h // 4)
                     elif x.dim() == 2:
                         # size and crop cond and the like
-                        x = [
-                            "x".join([str(xx) for xx in x[i].tolist()])
-                            for i in range(x.shape[0])
-                        ]
+                        x = ["x".join([str(xx) for xx in x[i].tolist()]) for i in range(x.shape[0])]
                         xc = log_txt_as_img((image_h, image_w), x, size=image_h // 20)
                     else:
                         raise NotImplementedError()
@@ -292,9 +267,7 @@ class DiffusionEngine(pl.LightningModule):
 
         c, uc = self.conditioner.get_unconditional_conditioning(
             batch,
-            force_uc_zero_embeddings=ucg_keys
-            if len(self.conditioner.embedders) > 0
-            else [],
+            force_uc_zero_embeddings=ucg_keys if len(self.conditioner.embedders) > 0 else [],
         )
 
         sampling_kwargs = {}
@@ -312,9 +285,7 @@ class DiffusionEngine(pl.LightningModule):
 
         if sample:
             with self.ema_scope("Plotting"):
-                samples = self.sample(
-                    c, shape=z.shape[1:], uc=uc, batch_size=N, **sampling_kwargs
-                )
+                samples = self.sample(c, shape=z.shape[1:], uc=uc, batch_size=N, **sampling_kwargs)
             samples = self.decode_first_stage(samples)
             log["samples"] = samples
         return log

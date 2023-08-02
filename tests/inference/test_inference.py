@@ -68,9 +68,7 @@ class TestInference:
         assert output is not None
 
     @pytest.mark.parametrize("sampler_enum", Sampler)
-    @pytest.mark.parametrize(
-        "use_init_image", [True, False], ids=["img2img", "txt2img"]
-    )
+    @pytest.mark.parametrize("use_init_image", [True, False], ids=["img2img", "txt2img"])
     def test_sdxl_with_refiner(
         self,
         sdxl_pipelines: Tuple[SamplingPipeline, SamplingPipeline],
@@ -81,9 +79,7 @@ class TestInference:
         if use_init_image:
             output = base_pipeline.image_to_image(
                 params=SamplingParams(sampler=sampler_enum.value, steps=10),
-                image=self.create_init_image(
-                    base_pipeline.specs.height, base_pipeline.specs.width
-                ),
+                image=self.create_init_image(base_pipeline.specs.height, base_pipeline.specs.width),
                 prompt="A professional photograph of an astronaut riding a pig",
                 negative_prompt="",
                 samples=1,

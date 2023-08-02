@@ -48,15 +48,13 @@ class WatermarkEmbedder:
         if squeeze:
             image = image[None, ...]
         n = image.shape[0]
-        image_np = rearrange(
-            (255 * image).detach().cpu(), "n b c h w -> (n b) h w c"
-        ).numpy()[:, :, :, ::-1]
+        image_np = rearrange((255 * image).detach().cpu(), "n b c h w -> (n b) h w c").numpy()[:, :, :, ::-1]
         # torch (b, c, h, w) in [0, 1] -> numpy (b, h, w, c) [0, 255]
         for k in range(image_np.shape[0]):
             image_np[k] = self.encoder.encode(image_np[k], "dwtDct")
-        image = torch.from_numpy(
-            rearrange(image_np[:, :, :, ::-1], "(n b) h w c -> n b c h w", n=n)
-        ).to(image.device)
+        image = torch.from_numpy(rearrange(image_np[:, :, :, ::-1], "(n b) h w c -> n b c h w", n=n)).to(
+            image.device
+        )
         image = torch.clamp(image / 255, min=0.0, max=1.0)
         if squeeze:
             image = image[0]
@@ -74,7 +72,7 @@ embed_watemark = WatermarkEmbedder(WATERMARK_BITS)
 @st.cache_resource()
 def init_st(version_dict, load_ckpt=True, load_filter=True):
     state = dict()
-    if not "model" in state:
+    if "model" not in state:
         config = version_dict["config"]
         ckpt = version_dict["ckpt"]
 
@@ -164,9 +162,7 @@ def init_embedder_options(keys, init_dict, prompt=None, negative_prompt=None):
     for key in keys:
         if key == "txt":
             if prompt is None:
-                prompt = st.text_input(
-                    "Prompt", "A professional photograph of an astronaut riding a pig"
-                )
+                prompt = st.text_input("Prompt", "A professional photograph of an astronaut riding a pig")
             if negative_prompt is None:
                 negative_prompt = st.text_input("Negative prompt", "")
 
@@ -212,9 +208,7 @@ def perform_save_locally(save_path, samples):
     samples = embed_watemark(samples)
     for sample in samples:
         sample = 255.0 * rearrange(sample.cpu().numpy(), "c h w -> h w c")
-        Image.fromarray(sample.astype(np.uint8)).save(
-            os.path.join(save_path, f"{base_count:09}.png")
-        )
+        Image.fromarray(sample.astype(np.uint8)).save(os.path.join(save_path, f"{base_count:09}.png"))
         base_count += 1
 
 
@@ -243,12 +237,12 @@ class Img2ImgDiscretizationWrapper:
     def __call__(self, *args, **kwargs):
         # sigmas start large first, and decrease then
         sigmas = self.discretization(*args, **kwargs)
-        print(f"sigmas after discretization, before pruning img2img: ", sigmas)
+        print("sigmas after discretization, before pruning img2img: ", sigmas)
         sigmas = torch.flip(sigmas, (0,))
         sigmas = sigmas[: max(int(self.strength * len(sigmas)), 1)]
         print("prune index:", max(int(self.strength * len(sigmas)), 1))
         sigmas = torch.flip(sigmas, (0,))
-        print(f"sigmas after pruning: ", sigmas)
+        print("sigmas after pruning: ", sigmas)
         return sigmas
 
 
@@ -268,7 +262,7 @@ class Txt2NoisyDiscretizationWrapper:
     def __call__(self, *args, **kwargs):
         # sigmas start large first, and decrease then
         sigmas = self.discretization(*args, **kwargs)
-        print(f"sigmas after discretization, before pruning img2img: ", sigmas)
+        print("sigmas after discretization, before pruning img2img: ", sigmas)
         sigmas = torch.flip(sigmas, (0,))
         if self.original_steps is None:
             steps = len(sigmas)
@@ -278,7 +272,7 @@ class Txt2NoisyDiscretizationWrapper:
         sigmas = sigmas[prune_index:]
         print("prune index:", prune_index)
         sigmas = torch.flip(sigmas, (0,))
-        print(f"sigmas after pruning: ", sigmas)
+        print("sigmas after pruning: ", sigmas)
         return sigmas
 
 
@@ -292,13 +286,9 @@ def get_guider(key):
     )
 
     if guider == "IdentityGuider":
-        guider_config = {
-            "target": "sgm.modules.diffusionmodules.guiders.IdentityGuider"
-        }
+        guider_config = {"target": "sgm.modules.diffusionmodules.guiders.IdentityGuider"}
     elif guider == "VanillaCFG":
-        scale = st.number_input(
-            f"cfg-scale #{key}", value=5.0, min_value=0.0, max_value=100.0
-        )
+        scale = st.number_input(f"cfg-scale #{key}", value=5.0, min_value=0.0, max_value=100.0)
 
         thresholder = st.sidebar.selectbox(
             f"Thresholder #{key}",
@@ -331,13 +321,9 @@ def init_sampling(
 ):
     num_rows, num_cols = 1, 1
     if specify_num_samples:
-        num_cols = st.number_input(
-            f"num cols #{key}", value=2, min_value=1, max_value=10
-        )
+        num_cols = st.number_input(f"num cols #{key}", value=2, min_value=1, max_value=10)
 
-    steps = st.sidebar.number_input(
-        f"steps #{key}", value=40, min_value=1, max_value=1000
-    )
+    steps = st.sidebar.number_input(f"steps #{key}", value=40, min_value=1, max_value=1000)
     sampler = st.sidebar.selectbox(
         f"Sampler #{key}",
         [
@@ -364,9 +350,7 @@ def init_sampling(
 
     sampler = get_sampler(sampler, steps, discretization_config, guider_config, key=key)
     if img2img_strength < 1.0:
-        st.warning(
-            f"Wrapping {sampler.__class__.__name__} with Img2ImgDiscretizationWrapper"
-        )
+        st.warning(f"Wrapping {sampler.__class__.__name__} with Img2ImgDiscretizationWrapper")
         sampler.discretization = Img2ImgDiscretizationWrapper(
             sampler.discretization, strength=img2img_strength
         )
@@ -427,10 +411,7 @@ def get_sampler(sampler_name, steps, discretization_config, guider_config, key=1
                 s_noise=s_noise,
                 verbose=True,
             )
-    elif (
-        sampler_name == "EulerAncestralSampler"
-        or sampler_name == "DPMPP2SAncestralSampler"
-    ):
+    elif sampler_name == "EulerAncestralSampler" or sampler_name == "DPMPP2SAncestralSampler":
         s_noise = st.sidebar.number_input("s_noise", value=1.0, min_value=0.0)
         eta = st.sidebar.number_input("eta", value=1.0, min_value=0.0)
 
@@ -546,7 +527,7 @@ def do_sample(
                     if isinstance(batch[key], torch.Tensor):
                         print(key, batch[key].shape)
                     elif isinstance(batch[key], list):
-                        print(key, [len(l) for l in batch[key]])
+                        print(key, [len(lat) for lat in batch[key]])
                     else:
                         print(key, batch[key])
                 c, uc = model.conditioner.get_unconditional_conditioning(
@@ -558,9 +539,7 @@ def do_sample(
 
                 for k in c:
                     if not k == "crossattn":
-                        c[k], uc[k] = map(
-                            lambda y: y[k][: math.prod(num_samples)].to("cuda"), (c, uc)
-                        )
+                        c[k], uc[k] = map(lambda y: y[k][: math.prod(num_samples)].to("cuda"), (c, uc))
 
                 additional_model_inputs = {}
                 for k in batch2model_input:
@@ -570,9 +549,7 @@ def do_sample(
                 randn = torch.randn(shape).to("cuda")
 
                 def denoiser(input, sigma, c):
-                    return model.denoiser(
-                        model.model, input, sigma, c, **additional_model_inputs
-                    )
+                    return model.denoiser(model.model, input, sigma, c, **additional_model_inputs)
 
                 load_model(model.denoiser)
                 load_model(model.model)
@@ -605,38 +582,24 @@ def get_batch(keys, value_dict, N: Union[List, ListConfig], device="cuda"):
 
     for key in keys:
         if key == "txt":
-            batch["txt"] = (
-                np.repeat([value_dict["prompt"]], repeats=math.prod(N))
-                .reshape(N)
-                .tolist()
-            )
+            batch["txt"] = np.repeat([value_dict["prompt"]], repeats=math.prod(N)).reshape(N).tolist()
             batch_uc["txt"] = (
-                np.repeat([value_dict["negative_prompt"]], repeats=math.prod(N))
-                .reshape(N)
-                .tolist()
+                np.repeat([value_dict["negative_prompt"]], repeats=math.prod(N)).reshape(N).tolist()
             )
         elif key == "original_size_as_tuple":
             batch["original_size_as_tuple"] = (
-                torch.tensor([value_dict["orig_height"], value_dict["orig_width"]])
-                .to(device)
-                .repeat(*N, 1)
+                torch.tensor([value_dict["orig_height"], value_dict["orig_width"]]).to(device).repeat(*N, 1)
             )
         elif key == "crop_coords_top_left":
             batch["crop_coords_top_left"] = (
-                torch.tensor(
-                    [value_dict["crop_coords_top"], value_dict["crop_coords_left"]]
-                )
+                torch.tensor([value_dict["crop_coords_top"], value_dict["crop_coords_left"]])
                 .to(device)
                 .repeat(*N, 1)
             )
         elif key == "aesthetic_score":
-            batch["aesthetic_score"] = (
-                torch.tensor([value_dict["aesthetic_score"]]).to(device).repeat(*N, 1)
-            )
+            batch["aesthetic_score"] = torch.tensor([value_dict["aesthetic_score"]]).to(device).repeat(*N, 1)
             batch_uc["aesthetic_score"] = (
-                torch.tensor([value_dict["negative_aesthetic_score"]])
-                .to(device)
-                .repeat(*N, 1)
+                torch.tensor([value_dict["negative_aesthetic_score"]]).to(device).repeat(*N, 1)
             )
 
         elif key == "target_size_as_tuple":

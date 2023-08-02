@@ -11,9 +11,7 @@ RESOURCES_ROOT = "scripts/util/detection/"
 
 def predict_proba(X, weights, biases):
     logits = X @ weights.T + biases
-    proba = np.where(
-        logits >= 0, 1 / (1 + np.exp(-logits)), np.exp(logits) / (1 + np.exp(logits))
-    )
+    proba = np.where(logits >= 0, 1 / (1 + np.exp(-logits)), np.exp(logits) / (1 + np.exp(logits)))
     return proba.T
 
 
@@ -90,12 +88,8 @@ def test(root):
         print(f"running on {p}...")
         img = load_img(os.path.join(root, p))
         filtered_img = filter(img)
-        filtered_img = rearrange(
-            255.0 * (filtered_img.numpy())[0], "c h w -> h w c"
-        ).astype(np.uint8)
-        Image.fromarray(filtered_img).save(
-            os.path.join(root, f"{os.path.splitext(p)[0]}-filtered.jpg")
-        )
+        filtered_img = rearrange(255.0 * (filtered_img.numpy())[0], "c h w -> h w c").astype(np.uint8)
+        Image.fromarray(filtered_img).save(os.path.join(root, f"{os.path.splitext(p)[0]}-filtered.jpg"))
 
 
 if __name__ == "__main__":

@@ -13,9 +13,7 @@ def benchmark_attn():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     def benchmark_torch_function_in_microseconds(f, *args, **kwargs):
-        t0 = benchmark.Timer(
-            stmt="f(*args, **kwargs)", globals={"args": args, "kwargs": kwargs, "f": f}
-        )
+        t0 = benchmark.Timer(stmt="f(*args, **kwargs)", globals={"args": args, "kwargs": kwargs, "f": f})
         return t0.blocked_autorange().mean * 1e6
 
     # Lets define the hyper-parameters of our input
@@ -51,7 +49,7 @@ def benchmark_attn():
         dtype=dtype,
     )
 
-    print(f"q/k/v shape:", query.shape, key.shape, value.shape)
+    print("q/k/v shape:", query.shape, key.shape, value.shape)
 
     # Lets explore the speed of each of the 3 implementations
     from torch.backends.cuda import SDPBackend, sdp_kernel
@@ -82,9 +80,7 @@ def benchmark_attn():
     print(
         f"The default implementation runs in {benchmark_torch_function_in_microseconds(F.scaled_dot_product_attention, query, key, value):.3f} microseconds"
     )
-    with profile(
-        activities=activities, record_shapes=False, profile_memory=True
-    ) as prof:
+    with profile(activities=activities, record_shapes=False, profile_memory=True) as prof:
         with record_function("Default detailed stats"):
             for _ in range(25):
                 o = F.scaled_dot_product_attention(query, key, value)
@@ -94,9 +90,7 @@ def benchmark_attn():
         f"The math implementation runs in {benchmark_torch_function_in_microseconds(F.scaled_dot_product_attention, query, key, value):.3f} microseconds"
     )
     with sdp_kernel(**backend_map[SDPBackend.MATH]):
-        with profile(
-            activities=activities, record_shapes=False, profile_memory=True
-        ) as prof:
+        with profile(activities=activities, record_shapes=False, profile_memory=True) as prof:
             with record_function("Math implmentation stats"):
                 for _ in range(25):
                     o = F.scaled_dot_product_attention(query, key, value)
@@ -109,9 +103,7 @@ def benchmark_attn():
             )
         except RuntimeError:
             print("FlashAttention is not supported. See warnings for reasons.")
-        with profile(
-            activities=activities, record_shapes=False, profile_memory=True
-        ) as prof:
+        with profile(activities=activities, record_shapes=False, profile_memory=True) as prof:
             with record_function("FlashAttention stats"):
                 for _ in range(25):
                     o = F.scaled_dot_product_attention(query, key, value)
@@ -124,9 +116,7 @@ def benchmark_attn():
             )
         except RuntimeError:
             print("EfficientAttention is not supported. See warnings for reasons.")
-        with profile(
-            activities=activities, record_shapes=False, profile_memory=True
-        ) as prof:
+        with profile(activities=activities, record_shapes=False, profile_memory=True) as prof:
             with record_function("EfficientAttention stats"):
                 for _ in range(25):
                     o = F.scaled_dot_product_attention(query, key, value)
@@ -142,9 +132,7 @@ def benchmark_transformer_blocks():
     import torch.utils.benchmark as benchmark
 
     def benchmark_torch_function_in_microseconds(f, *args, **kwargs):
-        t0 = benchmark.Timer(
-            stmt="f(*args, **kwargs)", globals={"args": args, "kwargs": kwargs, "f": f}
-        )
+        t0 = benchmark.Timer(stmt="f(*args, **kwargs)", globals={"args": args, "kwargs": kwargs, "f": f})
         return t0.blocked_autorange().mean * 1e6
 
     checkpoint = True
@@ -208,9 +196,7 @@ def benchmark_transformer_blocks():
         print("NATIVE")
         print(75 * "+")
         torch.cuda.reset_peak_memory_stats()
-        with profile(
-            activities=activities, record_shapes=False, profile_memory=True
-        ) as prof:
+        with profile(activities=activities, record_shapes=False, profile_memory=True) as prof:
             with record_function("NativeAttention stats"):
                 for _ in range(25):
                     model_native(x, c)
@@ -221,9 +207,7 @@ def benchmark_transformer_blocks():
         print("Xformers")
         print(75 * "+")
         torch.cuda.reset_peak_memory_stats()
-        with profile(
-            activities=activities, record_shapes=False, profile_memory=True
-        ) as prof:
+        with profile(activities=activities, record_shapes=False, profile_memory=True) as prof:
             with record_function("xformers stats"):
                 for _ in range(25):
                     model_efficient_attn(x, c)
